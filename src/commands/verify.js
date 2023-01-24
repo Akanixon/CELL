@@ -68,9 +68,16 @@ export class SlashCommand extends Command {
 
 	} else {
 		const result = await verifyQueue.findOne({where:{guildID:`${interaction.guildId}`,userID:`${interaction.user.id}`}});
-		if (result) {
-			if (result.dataValues.captcha == code) {
-				
+		switch(true){
+			// Not pending verification
+			case !result: 
+				interaction.reply({
+					content: "There is no pending verification, please run the verification command again",
+					ephemeral: true
+				});
+			break;
+			// Code correct
+			case result.dataValues.captcha == code:
 				const member = interaction.guild.members.cache.get(interaction.user.id);
 				const role = interaction.guild.roles.cache.find(r => r.id == "936636920224694343");
 				await member.roles.add(role);
@@ -78,19 +85,17 @@ export class SlashCommand extends Command {
 				interaction.reply({
 					content: "Verification Successful",
 					ephemeral: true
-				})
-			} else {
+				});
+				await result.destroy();
+			break;
+			// Code incorrect
+			default:
 				interaction.reply({
 					content: "Verification failed: Please run the command again",
 					ephemeral: true
 				});
-			}
-			await result.destroy();
-		} else {
-			interaction.reply({
-				content: "There is no pending verification, please run the verification command again",
-				ephemeral: true
-			});
+				await result.destroy();
+			break;
 		}
 	}
   }
